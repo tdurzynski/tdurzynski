@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trianz POC</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .email-list, .original-email, .email-summary {
+            height: 400px;
+            overflow-y: scroll;
+            margin-bottom: 20px;
+        }
+        .email-item {
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .category-button {
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        .full-width {
+            width: 100%;
+        }
+        @media (min-width: 768px) {
+            .col-md-4 {
+                min-width: 33.333333%;
+                max-width: 100%;
+            }
+        }
+        .original-email textarea {
+            height: calc(100% - 30px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <h1 class="text-center mb-4">Trianz POC</h1>
+        <div class="row">
+            <div class="col-md-4">
+                <button id="fetchEmails" class="btn btn-primary mb-3">Fetch Emails</button>
+                <button id="processEmail" class="btn btn-success mb-3">Process Email</button>
+                <div id="emailList" class="email-list"></div>
+            </div>
+            <div class="col-md-4">
+                <div id="emailDetails" class="email-details">
+                    <p><strong>From:</strong> <span id="emailFrom"></span></p>
+                    <p><strong>Subject:</strong> <span id="emailSubject"></span></p>
+                    <p><strong>Date:</strong> <span id="emailDate"></span></p>
+                </div>
+                <h5>Original Email Text:</h5>
+                <div id="originalEmail" class="original-email">
+                    <textarea class="form-control" id="emailContent" rows="13" placeholder="Email content will appear here..."></textarea>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <h5>Email Summary:</h5>
+                <div id="emailSummary" class="email-summary"><span id="summary"></span></div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4"><h5>Email Categories:</h5><span id="categories"></span></div>
+            <div class="col-md-4"><h5>Sentiment:</h5><span id="sentiment"></span></div>
+            <div class="col-md-4"><h5>Entities:</h5><span id="entities"></span></div>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <button class="btn btn-outline-secondary category-button">Inquiry</button>
+                <button class="btn btn-outline-secondary category-button">Update</button>
+                <button class="btn btn-outline-secondary category-button">Request</button>
+                <button class="btn btn-outline-secondary category-button">Feedback</button>
+                <button class="btn btn-outline-secondary category-button">Notification</button>
+            </div>
+            <div class="col-md-4">
+                <div>Neutral (75%)</div>
+            </div>
+            <div class="col-md-4">
+                <div>Project Alpha, Q4 Budget, Meeting</div>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <button id="createDraftResponse" class="btn btn-secondary">Create Draft Response</button>
+                <button id="sendDraftResponse" class="btn btn-primary">Send Draft Response</button>
+                <button id="sendFinalResponse" class="btn btn-info ml-2">Send Final Response</button>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-12">
+              <textarea class="form-control full-width" id="draftResponse" rows="3" placeholder="Draft response will appear here..."></textarea>
+            </div>
+      </div>
+  </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        var emailData = [
+            // Assuming the emailData array is filled with your email objects
+            {
+                "from_email": "John Doe",
+                "subject": "Inquiry About Cloud Migration Services",
+                "date": "2024-03-28T09:45:00",
+                "body": "Hello, I am writing to inquire about the cloud migration services provided by [Your Company]. We are currently considering the transition from an on-premises infrastructure to a cloud-based solution and are evaluating potential IT consulting partners for this project. Specifically, I am interested in: - Understanding the typical process your team follows for cloud migration. - Learning about the estimated timelines for a project of this scale. - Discussing pricing models and any initial consultation fees. Could you please provide detailed information or arrange a meeting to discuss this further? Thank you, [Your Name]"
+            },
+            {
+                "from_email": "Jane Smith",
+                "subject": "Weekly Update on Network Security Enhancement Project",
+                "date": "2024-03-29T11:00:00",
+                "body": "Dear Team, I hope this message finds you well. Here's the weekly update on our ongoing Network Security Enhancement Project: - Progress Made: Completed the installation of advanced threat detection tools across all servers. Upgraded firewall configurations to enhance network defenses. Initiated the first phase of our employee cybersecurity awareness program. - Challenges Encountered: Faced minor delays in software delivery from third-party vendors. Encountered compatibility issues with legacy systems during tool integration. - Next Steps: Schedule and conduct employee training sessions on new security protocols. Perform comprehensive system tests to ensure stability and security. Develop a contingency plan to address any potential system vulnerabilities identified. Please review the attached detailed report for more information and feel free to reach out if you have any questions or concerns. Best regards, [Your Name]"
+            },
+            {
+                "from_email": "Joe Somebody",
+                "subject": "Urgent Request for Additional Project Resources",
+                "date": "2024-03-30T08:15:00",
+                "body": "Hi, I am reaching out to request additional resources for our ongoing software development project, Project Phoenix. Due to unforeseen requirements and scope expansion, our current team is stretched thin, and we risk missing critical deadlines. We urgently require: Two additional software developers with experience in React and Node.js. One QA tester with automation testing background. Access to cloud-based development environments to expedite deployment. This resource augmentation is critical for: Maintaining project timeline and meeting the revised launch date. Ensuring thorough testing and quality assurance of new features. Addressing technical debt that has accrued due to accelerated project timelines. Please advise on the fastest way to onboard the required resources and any associated procedural requirements. Thank you, [Your Name]"
+            },
+            {
+                "from_email": "Srinivas A.",
+                "subject": "Feedback on IT Support Services - Ticket #12345",
+                "date": "2024-03-31T14:30:00",
+                "body": "Hello, I want to provide feedback regarding the IT support received under Ticket #12345. Positive Aspects: Quick initial response time. The issue was resolved within 24 hours. Areas for Improvement: The technical explanation provided was not clear enough for non-technical staff. Follow-up communication was delayed, leading to uncertainty about the issue's status. Suggestions: Consider creating a glossary or FAQ for common issues to help non-technical users understand solutions. Implement a system for regular updates on ticket status to keep all relevant stakeholders informed. Overall, while the service was effective, enhancing communication could significantly improve user satisfaction. Best regards, [Your Name]"
+            },
+            {
+                "from_email": "[From Name]",
+                "subject": "Notification of Upcoming System Maintenance",
+                "date": "2024-04-01T09:00:00",
+                "body": "Dear Valued Clients, This email is to notify you of the scheduled system maintenance that is planned for April 5, 2024, from 10:00 PM to 2:00 AM. During this period, the following services may experience intermittent availability: Online Client Portal Project Tracking Systems Customer Support Services This maintenance is crucial for: Implementing new software updates and security patches. Enhancing our server infrastructure for improved performance. Conducting essential database optimizations. We understand the inconvenience this may cause and are working to minimize downtime. We appreciate your patience and understanding during this time. Sincerely, [Your Name]"
+            }
+        ];
+
+        // Assuming loadEmails() is already defined and populates the email list
+        document.addEventListener('DOMContentLoaded', function() {
+            // This function populates the email list and sets up click events to populate column 2
+            function loadEmails() {
+                var emailList = document.getElementById('emailList');
+                emailList.innerHTML = ''; // Clear existing emails before loading new ones
+                emailData.forEach(function(email, index) {
+                    var emailItem = document.createElement('div');
+                    emailItem.className = 'email-item';
+                    emailItem.innerHTML = `${email.from_email} | ${email.subject} | ${email.body.substring(0, 50)}... | ${email.date}`;
+                    emailItem.addEventListener('click', function() {
+                        document.getElementById('emailFrom').textContent = email.from_email;
+                        document.getElementById('emailSubject').textContent = email.subject;
+                        document.getElementById('emailDate').textContent = email.date;
+                        document.getElementById('emailContent').value = email.body;
+                        // Clear the Email Summary area
+                        document.getElementById('emailSummary').innerHTML = '';
+                    });
+                    emailList.appendChild(emailItem);
+                });
+            }
+
+            // Listener for the "Fetch Emails" button to load emails
+            document.getElementById('fetchEmails').addEventListener('click', function() {
+                loadEmails(); // Existing function to load emails
+            });
+
+            // Listener for the "Process Email" button to construct payload and make API call
+            document.getElementById('processEmail').addEventListener('click', function() {
+                var emailContent = document.getElementById('emailContent').value;
+                var emailFrom = document.getElementById('emailFrom').textContent;
+                var emailSubject = document.getElementById('emailSubject').textContent;
+                var emailDate = document.getElementById('emailDate').textContent;
+
+                // Construct the payload within the same scope as the fetch call
+                var payload = {
+                    "body": emailContent,
+                    "from_email": emailFrom,
+                    "subject": emailSubject,
+                    "date": emailDate
+                };
+                console.log("Payload being sent:", JSON.stringify(payload));
+
+                // Make the fetch call here, using the payload defined above
+                fetch('/process_email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Ensure data for each field exists before updating the UI
+                    if (data.summary) document.getElementById('summary').textContent = data.summary;
+                    if (data.categories) document.getElementById('categories').textContent = data.categories;
+                    // Repeat for other fields...
+                })
+                    const summaryElement = document.getElementById('summary');
+                    if (summaryElement) {
+                        summaryElement.textContent = "Your new summary text";
+                    } else {
+                        console.error("The summary element doesn't exist at the moment of attempting to update it.");
+                    }
+
+                    // Update your UI elements here with the response data
+                    document.getElementById('summary').textContent = data.summary || "No summary available";
+                    document.getElementById('categories').textContent = data.categories || "No categories identified";
+                    document.getElementById('sentiment').textContent = data.sentiment || "No sentiment analysis available";
+                    document.getElementById('entities').textContent = data.entities || "No entities found";
+                    document.getElementById('draftResponse').value = data.draft_response || "No draft response provided";
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert('An error occurred while processing the email. Please check the console for more details.');
+                });
+            });
+        </script>
+
+        // Placeholder for 'Create Draft Response' functionality
+        document.getElementById('createDraftResponse').addEventListener('click', function() {
+            document.getElementById('draftResponse').value = 'Draft response goes here...'; // Populate with your draft response logic
+        });
+
+        // Placeholder for 'Send Draft Response' functionality
+        document.getElementById('sendDraftResponse').addEventListener('click', function() {
+            alert('Draft response sent!'); // Replace with your actual sending logic
+        });
+    </script>
+</body>
+</html>
