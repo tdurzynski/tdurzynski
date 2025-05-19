@@ -7,12 +7,12 @@ start_url = "https://docs.bmc.com/xwiki/bin/view/Control-M-Orchestration/Control
 
 def lxml_extractor(html: str) -> str:
     soup = BeautifulSoup(html, "lxml")
+    # Find the main documentation content
     main = soup.find("div", id="xwikicontent")
     if not main:
         return soup.get_text(separator="\n")
 
     content_lines = []
-    # Iterate through all descendants of the main content div
     for elem in main.descendants:
         if not hasattr(elem, "name"):
             continue
@@ -20,7 +20,7 @@ def lxml_extractor(html: str) -> str:
         if elem.name == "div" and "code" in elem.get("class", []):
             code_text = elem.get_text(separator="\n").strip()
             if code_text:
-                content_lines.append(f"\n```text\n{code_text}\n```")
+                content_lines.append(f"\n```json\n{code_text}\n```\n")
         # Extract paragraphs
         elif elem.name == "p":
             p_text = elem.get_text(separator="\n").strip()
@@ -40,7 +40,6 @@ def lxml_extractor(html: str) -> str:
                     rows.append(" | ".join(cells))
             if rows:
                 content_lines.append("\n".join(rows))
-    # Join all extracted content, preserving order
     return "\n\n".join(content_lines)
 
 loader = RecursiveUrlLoader(
