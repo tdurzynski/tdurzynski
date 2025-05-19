@@ -20,7 +20,7 @@ def lxml_extractor(html: str) -> str:
         if elem.name == "div" and "code" in elem.get("class", []):
             code_text = elem.get_text(separator="\n").strip()
             if code_text:
-                content_lines.append(f"\n```json\n{code_text}\n```\n")
+                content_lines.append(f"\n```json\n{code_text}\n```")
         # Extract paragraphs
         elif elem.name == "p":
             p_text = elem.get_text(separator="\n").strip()
