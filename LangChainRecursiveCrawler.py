@@ -24,3 +24,25 @@ for i, doc in enumerate(splits):
     print(f"\n--- Document {i+1} ---")
     print(f"Source: {doc.metadata.get('source')}")
     print(doc.page_content[:500])  # Print first 500 chars
+
+# Save to JSONL
+jsonl_path = "crawl_output.jsonl"
+with open(jsonl_path, "w", encoding="utf-8") as f_jsonl:
+    for doc in splits:
+        record = {
+            "source": doc.metadata.get("source"),
+            "content": doc.page_content,
+        }
+        f_jsonl.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+# Save to Markdown
+md_path = "crawl_output.md"
+with open(md_path, "w", encoding="utf-8") as f_md:
+    for i, doc in enumerate(splits, 1):
+        source = doc.metadata.get("source", "Unknown Source")
+        f_md.write(f"## Document {i}\n")
+        f_md.write(f"**Source:** {source}\n\n")
+        f_md.write(doc.page_content.strip() + "\n\n")
+        f_md.write("---\n\n")
+
+print(f"Saved {len(splits)} documents to {jsonl_path} and {md_path}")
