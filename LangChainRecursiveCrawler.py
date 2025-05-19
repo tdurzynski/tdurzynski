@@ -1,29 +1,59 @@
-from langchain_community.document_loaders import RecursiveUrlLoader
+import json
+from langchain_community.document_loaders.recursive_url_loader import RecursiveUrlLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from bs4 import BeautifulSoup
 
-# The URL you want to crawl
 start_url = "https://docs.bmc.com/xwiki/bin/view/Control-M-Orchestration/Control-M-Automation-API/ctmapi9202/Code-Reference/Job-Properties/"
 
-# Set up the loader: max_depth controls recursion, and only_internal=True restricts to the same domain
+def lxml_extractor(html: str) -> str:
+    soup = BeautifulSoup(html, "lxml")
+    main = soup.find("div", id="xwikicontent")
+    if not main:
+        return soup.get_text(separator="\n")
+
+    content_lines = []
+    # Iterate through all descendants of the main content div
+    for elem in main.descendants:
+        if not hasattr(elem, "name"):
+            continue
+        # Extract code blocks
+        if elem.name == "div" and "code" in elem.get("class", []):
+            code_text = elem.get_text(separator="\n").strip()
+            if code_text:
+                content_lines.append(f"\n```text\n{code_text}\n```")
+        # Extract paragraphs
+        elif elem.name == "p":
+            p_text = elem.get_text(separator="\n").strip()
+            if p_text:
+                content_lines.append(p_text)
+        # Extract lists
+        elif elem.name in ["ul", "ol"]:
+            items = [li.get_text(separator=" ").strip() for li in elem.find_all("li")]
+            if items:
+                content_lines.append("\n".join(f"- {item}" for item in items))
+        # Extract tables
+        elif elem.name == "table":
+            rows = []
+            for tr in elem.find_all("tr"):
+                cells = [td.get_text(separator=" ").strip() for td in tr.find_all(["td", "th"])]
+                if cells:
+                    rows.append(" | ".join(cells))
+            if rows:
+                content_lines.append("\n".join(rows))
+    # Join all extracted content, preserving order
+    return "\n\n".join(content_lines)
+
 loader = RecursiveUrlLoader(
     url=start_url,
-    max_depth=2,  # Adjust as needed
-    only_internal=True,
-    extractor="lxml",  # Uses lxml for parsing, no browser required
+    max_depth=2,
+    prevent_outside=True,
+    extractor=lxml_extractor,
 )
 
-# Load documents (this will crawl and extract text)
 docs = loader.load()
 
-# Optionally, split long documents for downstream processing
 splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=200)
 splits = splitter.split_documents(docs)
-
-# Print a summary of what was crawled
-for i, doc in enumerate(splits):
-    print(f"\n--- Document {i+1} ---")
-    print(f"Source: {doc.metadata.get('source')}")
-    print(doc.page_content[:500])  # Print first 500 chars
 
 # Save to JSONL
 jsonl_path = "crawl_output.jsonl"
